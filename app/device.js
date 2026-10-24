@@ -6,6 +6,7 @@
 
 const atvjs = require('@bharper/atv-js');
 const dgram = require('dgram');
+const os = require('os');
 const dnsPacket = require('dns-packet');
 const EventEmitter = require('events');
 const { States, appState } = require('./state');
@@ -43,71 +44,112 @@ function isAppleTV(model) {
     return /^(AppleTV|J)/.test(model || '');
 }
 
+/**
+ * Multicast discovery plus a unicast sweep of the local subnet, for networks
+ * (some routers and mesh Wi-Fi) that drop multicast between devices.
+ */
 async function scanAppleTVs(timeout = 5000) {
-    const devices = await atvjs.scan(timeout, false);
-    return devices.filter(d => isAppleTV(d.model));
+    const [multicast, unicast] = await Promise.all([
+        atvjs.scan(timeout, false),
+        queryCompanion(localSubnetHosts(), Math.min(timeout, 3000))
+    ]);
+    const byAddress = new Map(unicast.map(d => [d.address, d]));
+    multicast.forEach(d => byAddress.set(d.address, d));
+    return [...byAddress.values()].filter(d => isAppleTV(d.model));
+}
+
+const COMPANION_PTR = '_companion-link._tcp.local';
+
+/**
+ * Turn a unicast mDNS reply into a device in atv-js scan format
+ */
+function parseCompanion(packet, ip) {
+    const records = [...packet.answers, ...packet.additionals];
+    const instance = records.find(r => r.type === 'PTR' && r.name === COMPANION_PTR);
+    const srv = instance && records.find(r => r.type === 'SRV' && r.name === instance.data);
+    if (!srv) return null;
+
+    const properties = {};
+    records
+        .filter(r => r.type === 'TXT' && r.name === instance.data)
+        .flatMap(r => r.data)
+        .forEach(entry => {
+            const [key, ...rest] = entry.toString().split('=');
+            properties[key] = rest.join('=');
+        });
+    const infoModel = records
+        .filter(r => r.type === 'TXT' && r.name.endsWith('._device-info._tcp.local'))
+        .flatMap(r => r.data)
+        .map(entry => entry.toString())
+        .find(entry => entry.startsWith('model='));
+
+    const name = instance.data.replace('.' + COMPANION_PTR, '');
+    return {
+        name,
+        address: ip,
+        port: srv.data.port,
+        airplayPort: 7000,
+        identifier: properties.rpMRtID || properties.rpBA || name,
+        model: infoModel ? infoModel.slice('model='.length) : (properties.rpMd || ''),
+        properties
+    };
 }
 
 /**
- * Ask one host directly for its Companion service (unicast mDNS query).
+ * Ask hosts directly for their Companion service (unicast mDNS queries).
  * Works on networks that drop multicast discovery traffic.
- * @param {string} ip - IPv4 address of the Apple TV
- * @returns {Promise<Object|null>} Device in atv-js scan format, or null
+ * @param {string[]} ips - IPv4 addresses to ask
+ * @returns {Promise<Object[]>} Devices that answered, in atv-js scan format
  */
-function lookupByIp(ip, timeout = 3000) {
+function queryCompanion(ips, timeout = 3000) {
     return new Promise(resolve => {
         const socket = dgram.createSocket('udp4');
-        const finish = device => {
+        const found = new Map();
+        const finish = () => {
             clearTimeout(timer);
             socket.close();
-            resolve(device);
+            resolve([...found.values()]);
         };
-        const timer = setTimeout(() => finish(null), timeout);
+        const timer = setTimeout(finish, timeout);
 
-        socket.on('error', () => finish(null));
-        socket.on('message', msg => {
-            let packet;
+        socket.on('error', finish);
+        socket.on('message', (msg, rinfo) => {
+            let device;
             try {
-                packet = dnsPacket.decode(msg);
+                device = parseCompanion(dnsPacket.decode(msg), rinfo.address);
             } catch (err) {
                 return;
             }
-            const records = [...packet.answers, ...packet.additionals];
-            const instance = records.find(r => r.type === 'PTR' && r.name === '_companion-link._tcp.local');
-            const srv = instance && records.find(r => r.type === 'SRV' && r.name === instance.data);
-            if (!srv) return;
-
-            const properties = {};
-            records
-                .filter(r => r.type === 'TXT' && r.name === instance.data)
-                .flatMap(r => r.data)
-                .forEach(entry => {
-                    const [key, ...rest] = entry.toString().split('=');
-                    properties[key] = rest.join('=');
-                });
-            const infoModel = records
-                .filter(r => r.type === 'TXT' && r.name.endsWith('._device-info._tcp.local'))
-                .flatMap(r => r.data)
-                .map(entry => entry.toString())
-                .find(entry => entry.startsWith('model='));
-
-            const name = instance.data.replace('._companion-link._tcp.local', '');
-            finish({
-                name,
-                address: ip,
-                port: srv.data.port,
-                airplayPort: 7000,
-                identifier: properties.rpMRtID || properties.rpBA || name,
-                model: infoModel ? infoModel.slice('model='.length) : (properties.rpMd || ''),
-                properties
-            });
+            if (!device) return;
+            found.set(rinfo.address, device);
+            if (ips.length === 1) finish();
         });
 
-        socket.send(dnsPacket.encode({
-            type: 'query',
-            questions: [{ name: '_companion-link._tcp.local', type: 'PTR' }]
-        }), 5353, ip);
+        const query = dnsPacket.encode({ type: 'query', questions: [{ name: COMPANION_PTR, type: 'PTR' }] });
+        // Unreachable hosts are expected during a sweep; ignore per-send errors
+        ips.forEach(ip => socket.send(query, 5353, ip, () => {}));
     });
+}
+
+function lookupByIp(ip, timeout = 3000) {
+    return queryCompanion([ip], timeout).then(devices => devices[0] || null);
+}
+
+/**
+ * Every host in the /24 around each private IPv4 address of this machine.
+ * ponytail: only the /24 is swept; Apple TVs elsewhere on a larger subnet still
+ * need multicast discovery or manual IP entry.
+ */
+function localSubnetHosts() {
+    const privateIp = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
+    const hosts = new Set();
+    Object.values(os.networkInterfaces()).flat()
+        .filter(i => i.family === 'IPv4' && !i.internal && privateIp.test(i.address))
+        .forEach(i => {
+            const base = i.address.split('.').slice(0, 3).join('.');
+            for (let h = 1; h < 255; h++) hosts.add(`${base}.${h}`);
+        });
+    return [...hosts];
 }
 
 /**
