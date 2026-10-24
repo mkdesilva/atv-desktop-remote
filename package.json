@@ -11,6 +11,14 @@
             "category": "public.app-category.utilities",
             "identity": "Mihindu Kirahandi de Silva (4TFEU94KP6)",
             "notarize": true,
+            "extendInfo": {
+                "NSLocalNetworkUsageDescription": "ATV Remote finds and controls Apple TVs on your local network.",
+                "NSBonjourServices": [
+                    "_airplay._tcp",
+                    "_companion-link._tcp",
+                    "_device-info._tcp"
+                ]
+            },
             "hardenedRuntime": true,
             "gatekeeperAssess": false,
             "entitlements": "build/entitlements.mac.plist",
