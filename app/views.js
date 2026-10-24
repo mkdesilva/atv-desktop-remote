@@ -286,6 +286,7 @@ function setupDeviceDropdown() {
     $('#remoteDropdown').select2({
         data: options,
         placeholder: 'Select a remote',
+        width: 'auto', // size to the device name; the header has no fixed width to resolve
         dropdownAutoWidth: true,
         minimumResultsForSearch: Infinity
     }).off('change').on('change', () => {
