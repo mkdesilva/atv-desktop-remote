@@ -6,9 +6,11 @@
     "productName": "ATV Remote",
     "build": {
         "productName": "ATV Remote",
-        "appId": "com.electron.atvMacRemote",
+        "appId": "com.mkdesilva.atvremote",
         "mac": {
             "category": "public.app-category.utilities",
+            "identity": "Mihindu Kirahandi de Silva (4TFEU94KP6)",
+            "notarize": true,
             "hardenedRuntime": true,
             "gatekeeperAssess": false,
             "entitlements": "build/entitlements.mac.plist",
