@@ -5,6 +5,8 @@
  */
 
 const atvjs = require('@bharper/atv-js');
+const dgram = require('dgram');
+const dnsPacket = require('dns-packet');
 const EventEmitter = require('events');
 const { States, appState } = require('./state');
 
@@ -25,12 +27,87 @@ const CONNECT_RETRY_DELAY = 1000; // ms between retries
  */
 async function scan(timeout = 5000) {
     try {
-        const devices = await atvjs.scan(timeout);
+        const devices = await scanAppleTVs(timeout);
         return devices.map(d => `${d.name} (${d.address})`);
     } catch (err) {
         console.error('Scan error:', err);
         return [];
     }
+}
+
+/**
+ * atv-js only accepts "J..." model codes, which come from _device-info.
+ * Some Apple TVs only report "AppleTV14,1" (rpMd), so filter here instead.
+ */
+function isAppleTV(model) {
+    return /^(AppleTV|J)/.test(model || '');
+}
+
+async function scanAppleTVs(timeout = 5000) {
+    const devices = await atvjs.scan(timeout, false);
+    return devices.filter(d => isAppleTV(d.model));
+}
+
+/**
+ * Ask one host directly for its Companion service (unicast mDNS query).
+ * Works on networks that drop multicast discovery traffic.
+ * @param {string} ip - IPv4 address of the Apple TV
+ * @returns {Promise<Object|null>} Device in atv-js scan format, or null
+ */
+function lookupByIp(ip, timeout = 3000) {
+    return new Promise(resolve => {
+        const socket = dgram.createSocket('udp4');
+        const finish = device => {
+            clearTimeout(timer);
+            socket.close();
+            resolve(device);
+        };
+        const timer = setTimeout(() => finish(null), timeout);
+
+        socket.on('error', () => finish(null));
+        socket.on('message', msg => {
+            let packet;
+            try {
+                packet = dnsPacket.decode(msg);
+            } catch (err) {
+                return;
+            }
+            const records = [...packet.answers, ...packet.additionals];
+            const instance = records.find(r => r.type === 'PTR' && r.name === '_companion-link._tcp.local');
+            const srv = instance && records.find(r => r.type === 'SRV' && r.name === instance.data);
+            if (!srv) return;
+
+            const properties = {};
+            records
+                .filter(r => r.type === 'TXT' && r.name === instance.data)
+                .flatMap(r => r.data)
+                .forEach(entry => {
+                    const [key, ...rest] = entry.toString().split('=');
+                    properties[key] = rest.join('=');
+                });
+            const infoModel = records
+                .filter(r => r.type === 'TXT' && r.name.endsWith('._device-info._tcp.local'))
+                .flatMap(r => r.data)
+                .map(entry => entry.toString())
+                .find(entry => entry.startsWith('model='));
+
+            const name = instance.data.replace('._companion-link._tcp.local', '');
+            finish({
+                name,
+                address: ip,
+                port: srv.data.port,
+                airplayPort: 7000,
+                identifier: properties.rpMRtID || properties.rpBA || name,
+                model: infoModel ? infoModel.slice('model='.length) : (properties.rpMd || ''),
+                properties
+            });
+        });
+
+        socket.send(dnsPacket.encode({
+            type: 'query',
+            questions: [{ name: '_companion-link._tcp.local', type: 'PTR' }]
+        }), 5353, ip);
+    });
 }
 
 /**
@@ -46,11 +123,11 @@ async function startPair(deviceString) {
     }
     const ip = match[1];
 
-    // Scan to get full device info
-    const devices = await atvjs.scan(5000);
-    const device = devices.find(d => d.address === ip);
+    // Ask the IP directly; fall back to a full scan if it doesn't answer
+    const device = await lookupByIp(ip)
+        || (await scanAppleTVs(5000)).find(d => d.address === ip);
     if (!device) {
-        throw new Error('Device not found');
+        throw new Error(`No Apple TV answered at ${ip}`);
     }
 
     pairingDevice = device;
@@ -222,7 +299,7 @@ async function connect(credentials, isRetry = false) {
 
     // If device info not stored in credentials, we need to scan
     if (!device) {
-        const devices = await atvjs.scan(5000);
+        const devices = await scanAppleTVs(5000);
         if (credentials.identifier) {
             device = devices.find(d => d.identifier === credentials.identifier);
         }
@@ -462,6 +539,7 @@ function hasValidCredentials() {
 module.exports = {
     // Scanning
     scan,
+    lookupByIp,
 
     // Pairing
     startPair,

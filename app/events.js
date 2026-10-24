@@ -682,7 +682,7 @@ appState.on(States.PAIRING_1, (data) => {
     if (data.device) {
         device.startPair(data.device).catch(err => {
             console.error('Start pairing failed:', err);
-            views.setStatus('Could not start pairing.');
+            views.setStatus(`Could not start pairing: ${err.message}`);
         });
     }
 });

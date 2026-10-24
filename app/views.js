@@ -145,10 +145,21 @@ function createDevicePicker(devices) {
 
     const options = devices.map(el => ({ id: el, text: el }));
     options.unshift({ id: '', text: 'Select a device to pair' });
+    options.push({ id: 'manual', text: 'Enter IP address…' });
 
     // Destroy existing select2 if present
     if ($('#atv_picker').data('select2')) {
         $('#atv_picker').select2('destroy');
+    }
+    $('#atv_picker').empty();
+
+    // Networks that drop multicast make the scan come back empty
+    if (devices.length === 0) {
+        $('label[for="atv_picker"]').text('No Apple TVs found on your network. Enter its IP address instead.');
+        $('#manualIp').show();
+    } else {
+        $('label[for="atv_picker"]').text('Choose a device. Credentials are saved, so you only do this once.');
+        $('#manualIp').hide();
     }
 
     $('#atv_picker').select2({
@@ -158,10 +169,31 @@ function createDevicePicker(devices) {
         minimumResultsForSearch: Infinity
     }).off('change').on('change', () => {
         const selected = $('#atv_picker').val();
-        if (selected) {
+        if (selected === 'manual') {
+            $('#manualIp').show();
+            $('#manualIpInput').focus();
+        } else if (selected) {
             appState.transition(States.PAIRING_1, { device: selected });
         }
     });
+
+    $('#manualIpButton').off('click').on('click', submitManualIp);
+    $('#manualIpInput').off('keydown').on('keydown', e => {
+        if (e.key === 'Enter') submitManualIp();
+    });
+}
+
+/**
+ * Pair with an Apple TV by IP when discovery can't find it
+ */
+function submitManualIp() {
+    const ip = $('#manualIpInput').val().trim();
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+        setStatus('Enter an IP address like 192.168.1.20');
+        return;
+    }
+    $('#statusText').hide();
+    appState.transition(States.PAIRING_1, { device: `Apple TV (${ip})` });
 }
 
 /**

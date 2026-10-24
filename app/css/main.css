@@ -558,6 +558,38 @@ body .select2-container--default .select2-results__option--highlighted.select2-r
     box-shadow: var(--key-shadow), 0 0 0 3px var(--hold);
 }
 
+#manualIp {
+    display: none;
+    margin-top: 12px;
+}
+
+#manualIpInput {
+    display: block;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--key-edge);
+    border-radius: 10px;
+    background: var(--key);
+    box-shadow: var(--key-shadow);
+    color: var(--ink);
+    caret-color: var(--accent);
+    font: 500 15px var(--font);
+    font-variant-numeric: tabular-nums;
+    user-select: text;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#manualIpInput::placeholder {
+    color: var(--ink-2);
+    opacity: 0.5;
+}
+
+#manualIpInput:focus {
+    border-color: var(--accent);
+    box-shadow: var(--key-shadow), 0 0 0 3px var(--hold);
+}
+
 .pairMeta {
     margin: 10px 0 16px;
     font-size: 11px;

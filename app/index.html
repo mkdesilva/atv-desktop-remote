@@ -46,6 +46,11 @@
                         <h1 class="pairTitle">Pair an Apple TV</h1>
                         <label for="atv_picker">Choose a device. Credentials are saved, so you only do this once.</label>
                         <select id="atv_picker"></select>
+                        <div id="manualIp">
+                            <input id="manualIpInput" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="192.168.1.20" aria-label="Apple TV IP address" />
+                            <p class="pairMeta">On the Apple TV: Settings &rarr; Network shows its IP address.</p>
+                            <button class="simpleButton primary" id="manualIpButton">Continue</button>
+                        </div>
                     </div>
                     <div id="pairCodeElements">
                         <h1 class="pairTitle">Enter the code</h1>
