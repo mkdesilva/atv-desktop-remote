@@ -8,7 +8,6 @@
     <title>ATV Remote</title>
     <link rel="stylesheet" href="css/loaders.css">
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/pure-min.css">
     <link rel="stylesheet" href="css/all.css">
     <link rel="stylesheet" id="s2style-sheet" href="css/select2-inverted.css">
     <script>
@@ -20,142 +19,80 @@
 
 
     <body>
-        <div class="pure-g">
-            <div class="pure-u-1-2">
-                <div id="alwaysOnTopWrapper">
-                    <span class="keyTextAlt">H - hide window</span>
-                </div>
+        <header class="bar">
+            <div id="atvDropdownContainer"></div>
+            <div class="barActions">
+                <button id="topTextKBLink" class="iconButton" onclick="openKeyboardClick(event)" title="Open keyboard (K)" aria-label="Open keyboard">
+                    <span class="keyText"><i class="fas fa-keyboard"></i></span><span class="keyTextAlt">K</span>
+                </button>
+                <button id="exitLink" class="iconButton" title="Quit (press Q three times)" aria-label="Quit">
+                    <span class="keyText"><i class="fas fa-power-off"></i></span><span class="keyTextAlt">Q&times;3</span>
+                </button>
             </div>
-            <div class="pure-u-1-2">
-                <div id="exitLinkWrapper">
-                    <button id="exitLink" class="simpleButton"><span class="keyText">Quit</span><span class="keyTextAlt">Q (3x)</span></button>
-                </div>
-            </div>
-        </div>
-        <div class="center" id="keyboardButtonDiv">
-            <div class="topText">
-                <span id="topTextHeader">ATV Remote</span>
-            </div>
-                <div id="topTextKBLink">
-                    <div onclick="openKeyboardClick(event)">
-                        <span class="keyTextAlt">K</span>
-                        <span class="keyText">Open Keyboard</span>
-                    </div>
-                </div>    
-            
-            <div id="initText">
-                <p>Starting ATV Remote...</p>
-                <div style="text-align:center">
-                    <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
-                </div>
-            </div>
-        </div>
-        <div id="main">
+        </header>
 
+        <div id="initText">
+            <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+            <p>Starting ATV Remote&hellip;</p>
+        </div>
+
+        <main id="main">
             <div id="addNewElements">
                 <div id="loader">
                     <div id="pairingLoader"></div>
                 </div>
                 <div id="pairingElements">
-
                     <div id="results">
-                        <label for="atv_picker">Select a device to pair with. Your credentials will be saved for future use.</label>
+                        <h1 class="pairTitle">Pair an Apple TV</h1>
+                        <label for="atv_picker">Choose a device. Credentials are saved, so you only do this once.</label>
                         <select id="atv_picker"></select>
                     </div>
                     <div id="pairCodeElements">
-                        <label for="pairCode">Enter the 4 digit code here. This will be displayed on the device you selected.<br><span style="font-size:0.8em">Pairing <span id="pairProtocolName">Companion</span> credentials (pairing step <span id="pairStepNum">1</span> of 1)</span>
-                        <input id="pairCode" type="text" style="text-align: center" maxlength="4" />
-                    </label><button onclick="javascript:;" class="simpleButton" id="pairButton">Submit</button>
-                    
+                        <h1 class="pairTitle">Enter the code</h1>
+                        <label for="pairCode">Type the 4-digit code shown on your TV.</label>
+                        <input id="pairCode" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="0000" />
+                        <p class="pairMeta">Pairing <span id="pairProtocolName">Companion</span> &middot; step <span id="pairStepNum">1</span> of 1</p>
+                        <button onclick="javascript:;" class="simpleButton primary" id="pairButton">Pair</button>
                     </div>
                     <button id="cancelPairing" class="simpleButton"><span class="keyText">Cancel</span><span class="keyTextAlt">Cancel</span></button>
                 </div>
             </div>
+
             <div id="runningElements">
-
-                <div id="keyMapElement"></div>
-                <div class="pure-g">
-                    <div class="pure-u-1 pure-u-md-1-4"></div>
-                    <div class="pure-u-1 pure-u-md-1-2">
-                        <table class="directionTable">
-                            <tr>
-                                <td>
-                                    <div data-key="volume_down" data-tippy-content="Lower Volume" class=" directionCircle volumeKeys"><span class='keyText'><i class="fas fa-volume-down"></i></span><span class='keyTextAlt'>-, _</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="up" data-tippy-content="Up arrow" class="directionArrows directionCircle"><span class='keyText'><i class="fas fa-arrow-up"></i></span><span class='keyTextAlt'>Up</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="volume_up" data-tippy-content="Raise Volume" class=" directionCircle volumeKeys"><span class='keyText'><i class="fas fa-volume-up"></i></span><span class='keyTextAlt'>+, =</span></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div data-key="left" class="directionArrows directionCircle"><span class='keyText'><i class="fas fa-arrow-left"></i></span><span class='keyTextAlt'>Left</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="select" class="selectArrow directionArrows directionCircle"><span class='keyText'>Select</span><span class='keyTextAlt'>Enter</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="right" class="directionArrows directionCircle"><span class='keyText'><i class="fas fa-arrow-right"></i></span><span class='keyTextAlt'>Right</span></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div data-key="skip_backward" class="directionCircle"><span class='keyText'>Prev</span><span class='keyTextAlt'>P, [</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="down" class="directionArrows directionCircle"><span class='keyText'><i class="fas fa-arrow-down"></i></span><span class='keyTextAlt'>Down</span></div>
-                                </td>
-                                <td>
-                                    <div data-key="skip_forward" class="directionCircle"><span class='keyText'>Next</span><span class='keyTextAlt'>N, ]</span></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-
-                                </td>
-                                <td>
-
-                                </td>
-                                <td>
-
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="directionCircle" data-key="play_pause"><span class='keyText'>Play</span><span class='keyTextAlt'>Space</span></div>
-                                </td>
-                                <td>
-                                    <div class="directionCircle menuButton" data-key="menu"><span class='keyText'>Menu</span><span class='keyTextAlt'>Esc, <i class="fas fa-backspace"></i></span></div>
-                                </td>
-                                <td>
-                                    <div class="directionCircle" data-key="home"><span class='keyText'>TV</span><span class='keyTextAlt'>T, L</span></div>
-                                </td>
-                            </tr>
-                        </table>
-
+                <div class="directionTable">
+                    <div class="clickpad">
+                        <button data-key="up" class="padZone padUp" aria-label="Up"><span class="keyText"><i class="fas fa-chevron-up"></i></span><span class="keyTextAlt">&uarr;</span></button>
+                        <button data-key="left" class="padZone padLeft" aria-label="Left"><span class="keyText"><i class="fas fa-chevron-left"></i></span><span class="keyTextAlt">&larr;</span></button>
+                        <button data-key="right" class="padZone padRight" aria-label="Right"><span class="keyText"><i class="fas fa-chevron-right"></i></span><span class="keyTextAlt">&rarr;</span></button>
+                        <button data-key="down" class="padZone padDown" aria-label="Down"><span class="keyText"><i class="fas fa-chevron-down"></i></span><span class="keyTextAlt">&darr;</span></button>
+                        <button data-key="select" class="padSelect" aria-label="Select"><span class="keyText"></span><span class="keyTextAlt">Enter</span></button>
                     </div>
-                    <div class="pure-u-1 pure-u-md-1-4"></div>
 
-                    <div class="pure-u-1-12"></div>
-                    <div class="pure-u-5-6"></div>
-                    <div class="pure-u-1-12"></div>
+                    <div class="buttonRow">
+                        <button data-key="menu" class="roundKey" aria-label="Back" title="Back"><span class="keyText"><i class="fas fa-chevron-left"></i></span><span class="keyTextAlt">Esc</span></button>
+                        <button data-key="home" class="roundKey" aria-label="TV" title="TV (hold for Control Center)"><span class="keyText"><i class="fas fa-tv"></i></span><span class="keyTextAlt">T</span></button>
+                        <div class="pill" role="group" aria-label="Volume">
+                            <button data-key="volume_down" aria-label="Lower volume" title="Lower volume"><span class="keyText"><i class="fas fa-minus"></i></span><span class="keyTextAlt">&minus;</span></button>
+                            <button data-key="volume_up" aria-label="Raise volume" title="Raise volume"><span class="keyText"><i class="fas fa-plus"></i></span><span class="keyTextAlt">+</span></button>
+                        </div>
+                    </div>
+
+                    <div class="pill transport" role="group" aria-label="Playback">
+                        <button data-key="skip_backward" aria-label="Previous" title="Previous"><span class="keyText"><i class="fas fa-step-backward"></i></span><span class="keyTextAlt">[</span></button>
+                        <button data-key="play_pause" aria-label="Play or pause" title="Play / Pause"><span class="keyText"><i class="fas fa-play"></i><i class="fas fa-pause"></i></span><span class="keyTextAlt">Space</span></button>
+                        <button data-key="skip_forward" aria-label="Next" title="Next"><span class="keyText"><i class="fas fa-step-forward"></i></span><span class="keyTextAlt">]</span></button>
+                    </div>
                 </div>
-
             </div>
-
 
             <div id="cmdWrapper">
                 <div id="cmdFade"></div>
             </div>
+        </main>
 
-        </div>
         <footer>
-            <div class="footer center">
-                <h2 id="statusText"></h2>
-                <div id="atvDropdownContainer"></div>
-            </div>
+            <p id="statusText"></p>
+            <p class="hint keyTextAlt">H hide &middot; K keyboard &middot; Shift+key long press</p>
         </footer>
     </body>
     <script src="web_remote.js"></script>

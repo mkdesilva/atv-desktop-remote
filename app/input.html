@@ -15,11 +15,11 @@
 
 <body>
     <div class="large-text-input-wrapper green">
-        <input type="text" id="textInput" class="large-text-input" placeholder="Enter text for search field">
+        <input type="text" id="textInput" class="large-text-input" placeholder="Type to search on your TV">
     </div>
-    <p class="info-text-italics">This will only work if a search field is active on the connected Apple TV.</p>
-    <p class="info-text">🟢 = connected device is accepting text input</p>
-    <p class="info-text"><span style="opacity: 0.5">⚪️</span> = connected device does not appear to be accepting text input</p>
+    <p class="info-text-italics">Works when a search or text field is open on the Apple TV.</p>
+    <p class="info-text"><span class="dot good"></span>Apple TV is accepting text</p>
+    <p class="info-text"><span class="dot"></span>No text field active on the Apple TV</p>
 
     <script>
         document.hidden = true;

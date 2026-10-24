@@ -22,7 +22,6 @@ let currentView = null;
 
 // Long press state (scoped to module)
 let longPressTimers = {};
-let longPressProgress = {};
 let isLongPressing = {};
 
 /**
@@ -174,92 +173,40 @@ function setupRemoteButtons() {
 
     // Clear previous handlers and state
     longPressTimers = {};
-    longPressProgress = {};
     isLongPressing = {};
 
     $('[data-key]').off('mousedown mouseup mouseleave');
 
+    // Hold visuals are pure CSS (.pressing / .longpress-triggered in main.css)
     $('[data-key]').on('mousedown', function(e) {
         const key = $(this).data('key');
         const $button = $(this);
 
-        if (longPressTimers[key]) {
-            clearTimeout(longPressTimers[key]);
-            clearInterval(longPressProgress[key]);
-        }
-
-        let progressValue = 0;
+        clearTimeout(longPressTimers[key]);
         isLongPressing[key] = true;
-
         $button.addClass('pressing');
-
-        longPressProgress[key] = setInterval(() => {
-            if (!isLongPressing[key]) return;
-
-            progressValue += 2;
-            const progressPercent = Math.min(progressValue, 100);
-            const radiusPercent = 100 - progressPercent;
-
-            const computedStyle = window.getComputedStyle($button[0]);
-            let bgColor = computedStyle.backgroundColor;
-
-            if (bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
-                const isDarkMode = $('body').hasClass('darkMode');
-                bgColor = isDarkMode ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-            }
-
-            $button.css('background', `radial-gradient(circle, transparent ${radiusPercent}%, ${bgColor} ${radiusPercent}%)`);
-
-            const scale = 1 + (progressPercent * 0.001);
-            $button.css('transform', `scale(${scale})`);
-        }, 20);
 
         longPressTimers[key] = setTimeout(() => {
             if (!isLongPressing[key]) return;
 
-            clearInterval(longPressProgress[key]);
             $button.addClass('longpress-triggered');
-
-            const computedStyle = window.getComputedStyle($button[0]);
-            let successColor = computedStyle.backgroundColor;
-
-            if (successColor === 'rgba(0, 0, 0, 0)' || successColor === 'transparent') {
-                const isDarkMode = $('body').hasClass('darkMode');
-                successColor = isDarkMode ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-            }
-
-            $button.css('background', successColor);
-
             console.log(`Long press triggered for: ${key}`);
             window.sendCommand(key, true); // true indicates long press
 
             isLongPressing[key] = false;
-
-            setTimeout(() => {
-                $button.removeClass('pressing longpress-triggered');
-                $button.css({ 'background': '', 'transform': '' });
-            }, 200);
+            setTimeout(() => $button.removeClass('pressing longpress-triggered'), 200);
         }, 1000);
     });
 
     $('[data-key]').on('mouseup mouseleave', function(e) {
         const key = $(this).data('key');
-        const $button = $(this);
 
         if (isLongPressing[key]) {
-            if (longPressTimers[key]) {
-                clearTimeout(longPressTimers[key]);
-                longPressTimers[key] = null;
-            }
-            if (longPressProgress[key]) {
-                clearInterval(longPressProgress[key]);
-                longPressProgress[key] = null;
-            }
-
+            clearTimeout(longPressTimers[key]);
+            longPressTimers[key] = null;
             isLongPressing[key] = false;
 
-            $button.removeClass('pressing');
-            $button.css({ 'background': '', 'transform': '' });
+            $(this).removeClass('pressing');
 
             if (e.type === 'mouseup') {
                 console.log(`Regular click for: ${key}`);
@@ -302,9 +249,7 @@ function setupDeviceDropdown() {
 
     options.unshift({ id: 'addnew', text: 'Pair another remote' });
 
-    let html = `<span class='ctText'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
-    html += `<select id="remoteDropdown"></select>`;
-    $('#atvDropdownContainer').html(html);
+    $('#atvDropdownContainer').html('<select id="remoteDropdown"></select>');
 
     $('#remoteDropdown').select2({
         data: options,
