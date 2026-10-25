@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-24T14:56:44.453Z",
+        "reason": "Claude: segmented .pill controls intentionally fill edge to edge (Siri Remote style); detector flagged children flush against pill background"
+      }
+    ]
+  }
+}
