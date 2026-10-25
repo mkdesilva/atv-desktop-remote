@@ -34,7 +34,8 @@
         "build": "npx electron-builder -m",
         "docker-build": "./electron_docker.sh 'npm run build:win'",
         "build:win": "npx electron-builder -w",
-        "build-arm": "npx electron-builder -m --arm64"
+        "build-arm": "npx electron-builder -m --arm64",
+        "release": "npx electron-builder -m --x64 --arm64 && gh release create v$npm_package_version dist/*-$npm_package_version*.dmg dist/*-$npm_package_version*-mac.zip --target $(git rev-parse HEAD) --title v$npm_package_version --generate-notes"
     },
     "devDependencies": {
         "electron": "^41.1.0",
